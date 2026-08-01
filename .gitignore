@@ -1,0 +1,25 @@
+# ---- .NET ----
+bin/
+obj/
+*.user
+.vs/
+
+# ---- Node / frontend ----
+node_modules/
+dist/
+frontend/.vite/
+
+# ---- Env / secrets ----
+.env
+.env.*
+!.env.example
+
+# ---- Docker ----
+*.log
+
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
