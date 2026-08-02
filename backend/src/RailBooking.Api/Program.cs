@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RailBooking.Api.Data;
+using RailBooking.Api.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,6 +9,20 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+builder.Services.Configure<FareRatesOptions>(builder.Configuration.GetSection(FareRatesOptions.SectionName));
+
+// The frontend (a different origin - e.g. the Vite dev server, or the
+// frontend container in docker-compose) needs CORS explicitly allowed.
+// Origins are configuration, not hardcoded, so docker-compose and local
+// dev can each point at the right place.
+const string FrontendCorsPolicy = "Frontend";
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(FrontendCorsPolicy, policy =>
+        policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod());
+});
 
 // Connection string comes from configuration only - never hardcoded here.
 // Docker Compose supplies it via the ConnectionStrings__RailBookingDb
@@ -42,6 +57,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors(FrontendCorsPolicy);
 
 app.UseAuthorization();
 
