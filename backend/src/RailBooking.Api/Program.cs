@@ -56,8 +56,11 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseHttpsRedirection();
-
+// No HTTPS redirect: this app is never deployed with TLS configured
+// directly on it in this project (Docker Compose serves plain HTTP; a real
+// production deployment would terminate TLS at a reverse proxy in front of
+// it instead), so redirecting to a nonexistent https endpoint would just be
+// dead code producing warning-log noise.
 app.UseCors(FrontendCorsPolicy);
 
 app.UseAuthorization();
