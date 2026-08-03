@@ -29,14 +29,15 @@ public static class SeedData
     ];
 
     // 3 reserved + 5 unreserved, per the assignment's description of the
-    // line. Reserved coaches get a modest seat count (10) to keep the demo
-    // seat grid easy to look at; Unreserved coaches carry only a capacity
-    // figure since there is no per-seat booking for them (see Seat.cs).
+    // line. Reserved coaches seat 20 (5 rows of 2+aisle+2 - see the seat
+    // map's row/window derivation on the frontend); Unreserved coaches
+    // carry only a capacity figure since there is no per-seat booking for
+    // them (see Seat.cs).
     public static Coach[] GetCoaches() =>
     [
-        new() { Id = 1, TrainId = 1, CoachNumber = 1, Type = CoachType.Reserved, SeatCount = 10 },
-        new() { Id = 2, TrainId = 1, CoachNumber = 2, Type = CoachType.Reserved, SeatCount = 10 },
-        new() { Id = 3, TrainId = 1, CoachNumber = 3, Type = CoachType.Reserved, SeatCount = 10 },
+        new() { Id = 1, TrainId = 1, CoachNumber = 1, Type = CoachType.Reserved, SeatCount = 20 },
+        new() { Id = 2, TrainId = 1, CoachNumber = 2, Type = CoachType.Reserved, SeatCount = 20 },
+        new() { Id = 3, TrainId = 1, CoachNumber = 3, Type = CoachType.Reserved, SeatCount = 20 },
         new() { Id = 4, TrainId = 1, CoachNumber = 4, Type = CoachType.Unreserved, SeatCount = 80 },
         new() { Id = 5, TrainId = 1, CoachNumber = 5, Type = CoachType.Unreserved, SeatCount = 80 },
         new() { Id = 6, TrainId = 1, CoachNumber = 6, Type = CoachType.Unreserved, SeatCount = 80 },
@@ -44,8 +45,10 @@ public static class SeedData
         new() { Id = 8, TrainId = 1, CoachNumber = 8, Type = CoachType.Unreserved, SeatCount = 80 },
     ];
 
-    // 10 seats in each of the 3 reserved coaches (ids 1-3) - nothing for the
-    // 5 unreserved coaches.
+    // 20 seats in each of the 3 reserved coaches (ids 1-3) - nothing for the
+    // 5 unreserved coaches. SeatNumber alone (1-20) is enough for the
+    // frontend to derive row and window-seat position: row = ceil(n/4),
+    // and position 1 or 4 within the row of 4 is a window seat.
     public static Seat[] GetSeats()
     {
         var seats = new List<Seat>();
@@ -53,7 +56,7 @@ public static class SeedData
 
         for (var coachId = 1; coachId <= 3; coachId++)
         {
-            for (var seatNumber = 1; seatNumber <= 10; seatNumber++)
+            for (var seatNumber = 1; seatNumber <= 20; seatNumber++)
             {
                 seats.Add(new Seat { Id = nextId++, CoachId = coachId, SeatNumber = seatNumber });
             }

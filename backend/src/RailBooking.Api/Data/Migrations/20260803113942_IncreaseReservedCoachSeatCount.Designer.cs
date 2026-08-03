@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using RailBooking.Api.Data;
@@ -11,9 +12,11 @@ using RailBooking.Api.Data;
 namespace RailBooking.Api.Data.Migrations
 {
     [DbContext(typeof(RailBookingDbContext))]
-    partial class RailBookingDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260803113942_IncreaseReservedCoachSeatCount")]
+    partial class IncreaseReservedCoachSeatCount
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

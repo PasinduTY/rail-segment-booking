@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import "./App.css";
+import { CoverBanner } from "./components/CoverBanner";
 import { JourneySelector } from "./components/JourneySelector";
-import { SeatGrid } from "./components/SeatGrid";
+import { SeatMap } from "./components/SeatMap";
 import { BookingPanel } from "./components/BookingPanel";
 import {
   ApiError,
@@ -169,6 +170,8 @@ function App() {
         <p className="muted">Segment-based reserved seat booking</p>
       </header>
 
+      <CoverBanner />
+
       {stationsError && <p className="error">{stationsError}</p>}
 
       <JourneySelector
@@ -209,7 +212,7 @@ function App() {
           {availabilityLoading && <p className="muted">Checking availability...</p>}
           {availabilityError && <p className="error">{availabilityError}</p>}
           {availability && !availabilityLoading && (
-            <SeatGrid
+            <SeatMap
               seats={availability.seats}
               selectedSeatId={selectedSeatId}
               onSelectSeat={setSelectedSeatId}
