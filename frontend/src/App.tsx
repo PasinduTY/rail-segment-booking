@@ -14,12 +14,28 @@ import {
 } from "./api/client";
 import type { AvailabilityResponse, Booking, Station, TripDeparture } from "./api/types";
 
-function todayIso(): string {
-  const now = new Date();
-  const yyyy = now.getFullYear();
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
+// Mirrors DbSeeder.RollingWindowDays on the backend (see
+// backend/src/RailBooking.Api/Data/DbSeeder.cs) - trip departures are only
+// ever seeded for today through this many days ahead, so the date picker
+// shouldn't offer a date beyond that horizon in the first place. If one
+// changes, check the other.
+const BOOKING_HORIZON_DAYS = 14;
+
+function formatIso(d: Date): string {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
+}
+
+function todayIso(): string {
+  return formatIso(new Date());
+}
+
+function maxBookableDateIso(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + BOOKING_HORIZON_DAYS - 1);
+  return formatIso(d);
 }
 
 function describeError(err: unknown): string {
@@ -33,6 +49,10 @@ function App() {
   // so this is the floor for the date picker (see JourneySelector's
   // `minDate` prop) rather than something the user can move backward past.
   const today = todayIso();
+  // The ceiling for the same reason, in the other direction: picking a date
+  // beyond the seeded window would just show "no departures" with no
+  // indication that it's an intentional booking horizon rather than a bug.
+  const maxDate = maxBookableDateIso();
 
   const [stations, setStations] = useState<Station[]>([]);
   const [stationsError, setStationsError] = useState<string | null>(null);
@@ -179,6 +199,7 @@ function App() {
         stations={stations}
         date={date}
         minDate={today}
+        maxDate={maxDate}
         onDateChange={setDate}
         originId={originId}
         destinationId={destinationId}

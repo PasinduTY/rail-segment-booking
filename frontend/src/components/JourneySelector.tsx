@@ -4,6 +4,7 @@ interface JourneySelectorProps {
   stations: Station[];
   date: string;
   minDate: string;
+  maxDate: string;
   onDateChange: (date: string) => void;
   originId: number | "";
   destinationId: number | "";
@@ -15,6 +16,7 @@ export function JourneySelector({
   stations,
   date,
   minDate,
+  maxDate,
   onDateChange,
   originId,
   destinationId,
@@ -40,8 +42,10 @@ export function JourneySelector({
           type="date"
           value={date}
           min={minDate}
+          max={maxDate}
           onChange={(e) => onDateChange(e.target.value)}
         />
+        <span className="field-hint">Bookings open up to 14 days ahead</span>
       </label>
 
       <label className="field">

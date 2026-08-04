@@ -11,6 +11,10 @@ using RailBooking.Domain.Entities;
 // startup instead keeps the demo working no matter when the app is started.
 public static class DbSeeder
 {
+    // Mirrored on the frontend as BOOKING_HORIZON_DAYS (frontend/src/App.tsx)
+    // so the date picker's max bound matches what's actually seeded, instead
+    // of letting a user pick a date this far out and just see an
+    // unexplained "no departures" message. If one changes, check the other.
     private const int RollingWindowDays = 14;
 
     public static async Task SeedUpcomingTripDeparturesAsync(
