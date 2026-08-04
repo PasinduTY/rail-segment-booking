@@ -57,7 +57,7 @@ immediately on boot.
 - **Coach** — belongs to a Train, has a `Type` (`Reserved` / `Unreserved`)
   and a configured `SeatCount`.
 - **Seat** — only ever created for `Reserved` coaches. `Unreserved` coaches
-  are first-come-first-served with no seat assignment *by definition*, so
+  are first-come-first-served with no seat assignment _by definition_, so
   there is nothing per-seat to model for them — this is enforced structurally
   (no `Seat` rows are ever generated for them), not by a runtime check.
 - **TripDeparture** — a specific calendar-date run of a Train. This exists
@@ -79,7 +79,7 @@ distance. Two different representations for two different jobs: sequence
 numbers (small integers, no gaps) are exact and simple for overlap math;
 `DistanceKm` (a separate field on `Station`) is used only for fare
 calculation. Half-open ranges are what make **adjacent** legs — one ending at
-a station, the next starting at that same station — correctly *not* count as
+a station, the next starting at that same station — correctly _not_ count as
 overlapping, which is the entire mechanic the assignment's "resell the
 vacated seat" requirement depends on.
 
@@ -123,6 +123,7 @@ ALTER TABLE "Bookings" ADD CONSTRAINT "CK_Bookings_NoOverlappingSegments"
 gap for tool/process latency to hide in) showed exactly the documented
 Postgres behavior: the second insert **blocks** until the first transaction
 resolves, then rechecks —
+
 - if the first **committed**, the second correctly **fails**;
 - if the first **rolled back**, the second correctly **succeeds** (it isn't
   punished for a booking that never actually happened).
@@ -135,14 +136,15 @@ asks for: overlapping requests are safely serialized, adjacent ones are
 never falsely contended.
 
 **Alternatives considered and rejected:**
-- *Application-level pessimistic locking* (`SELECT ... FOR UPDATE` + a manual
+
+- _Application-level pessimistic locking_ (`SELECT ... FOR UPDATE` + a manual
   overlap check + insert) — works, but the correctness guarantee then lives
   in application code that has to be gotten right on every code path,
   instead of one schema constraint the database enforces unconditionally.
-- *`SERIALIZABLE` isolation + retry loop* — also correct, but adds
+- _`SERIALIZABLE` isolation + retry loop_ — also correct, but adds
   retry-on-conflict complexity and coarser locking than a targeted GiST index
   on just the range column.
-- *Optimistic concurrency (a version/row token)* — designed for single-row
+- _Optimistic concurrency (a version/row token)_ — designed for single-row
   last-writer-wins conflicts, not naturally suited to "does my new range
   overlap any of N existing rows."
 
@@ -230,13 +232,13 @@ actually started.
 
 ## API surface
 
-| Method | Route | Purpose |
-|---|---|---|
-| `GET` | `/api/stations` | Ordered list of stations |
-| `GET` | `/api/trip-departures?date=` | Departures on a given date (defaults to today) |
-| `GET` | `/api/trip-departures/{id}/availability?originStationId=&destinationStationId=` | Per-seat availability + fare for a specific leg |
-| `POST` | `/api/bookings` | Create a booking (`201`, or `409` on a genuine conflict) |
-| `GET` | `/api/bookings/{id}` | Booking confirmation detail |
+| Method | Route                                                                           | Purpose                                                  |
+| ------ | ------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `GET`  | `/api/stations`                                                                 | Ordered list of stations                                 |
+| `GET`  | `/api/trip-departures?date=`                                                    | Departures on a given date (defaults to today)           |
+| `GET`  | `/api/trip-departures/{id}/availability?originStationId=&destinationStationId=` | Per-seat availability + fare for a specific leg          |
+| `POST` | `/api/bookings`                                                                 | Create a booking (`201`, or `409` on a genuine conflict) |
+| `GET`  | `/api/bookings/{id}`                                                            | Booking confirmation detail                              |
 
 ## Frontend notes
 
@@ -253,6 +255,7 @@ quickly.
 real-time-ish availability, graceful conflict recovery) — built as part of
 the core booking flow, not bolted on separately, but worth calling out
 explicitly since it's a listed extra-credit item:
+
 - A visible "Checking availability..." state while the seat grid loads.
 - On a `409` (seat taken between page load and submit), a specific,
   friendly message rather than a generic error — and availability is
@@ -286,7 +289,6 @@ necessary `UpdateData`/`InsertData` operations in a migration automatically
 actual pixel positions (`getBoundingClientRect`) in the browser to confirm
 seats land in the intended row/aisle grid, not just that the DOM claims to.
 
-
 Other ideas considered but not attempted: waitlisting for fully booked
 segments, and an admin/occupancy view — deprioritized given the project
 timeline and the assignment's explicit guidance to prioritize a solid core
@@ -304,51 +306,68 @@ the single-seat concurrency behavior was verified with earlier.
 
 ## Challenges faced
 
-- **A known vulnerability with no available fix.** The ASP.NET Core OpenAPI
-  package transitively pulls in `Microsoft.OpenApi 2.0.0`, flagged by
-  `NU1903`/`GHSA-v5pm-xwqc-g5wc` (a stack-overflow risk when *parsing*
-  untrusted OpenAPI/YAML). The only version line with an actual fix (3.x)
-  breaks compatibility with .NET 10's source generator — confirmed by trying
-  it and getting a build error. Since this project only *generates* its own
-  OpenAPI document and never parses external ones, the practical risk is
-  negligible; documented here as a deliberate, informed tradeoff rather than
-  silently ignored.
-- **A Visual Studio-specific user-secrets glitch.** After setting a
-  connection string via `dotnet user-secrets`, the app failed with
-  "connection string not configured" *only* when launched from Visual
-  Studio's debugger — not from the CLI. Diagnosed methodically: verified the
-  secret existed on disk, verified no conflicting environment variables,
-  verified the CLI could start the app cleanly with the exact same
-  configuration, verified the correct `UserSecretsId` was compiled into the
-  assembly. The `Manage User Secrets` command in Visual Studio was found to
-  be showing a stale/empty view of a file that was actually correct on disk;
-  explicitly rewriting the secret through Visual Studio's own tooling
-  resolved it.
-- **My own flawed concurrency test.** My first attempt at proving concurrent
-  overlapping requests behave correctly used two separate commands run
-  moments apart — one to hold a transaction open, another to fire a
-  conflicting request. The results looked plausible, but were meaningless:
-  the delay between issuing the two commands turned out to exceed 13 seconds
-  in one case — meaning the "concurrent" request was actually firing after
-  the first transaction had already finished. Caught by adding real
-  timestamps on both the database and shell side and noticing they didn't
-  add up; fixed by running the entire test inside a single shell script so
-  there's no gap for that delay to hide in.
-- **A local dev port mismatch.** The backend's default `launchSettings.json`
-  ports (auto-generated by the project template) didn't match the port
-  already documented for the frontend to call — a plain configuration
-  oversight, fixed by aligning both to one canonical local-dev port.
-- **A stale process silently serving old state.** After stopping and
-  restarting the local API multiple times during manual testing, a build
-  once failed with a file-lock error — a previous `RailBooking.Api` process
-  hadn't actually exited and was still holding its own executable open. Worse,
-  that same orphaned process was still answering requests on the expected
-  port the whole time, so an earlier symptom (trip departures appearing
-  empty after a database reset) was actually caused by talking to a stale
-  process that had seeded itself before the reset and never got the chance
-  to re-seed. Found by explicitly listing OS processes by name rather than
-  trusting that "the API responds on this port" means "the API I just
-  started is the one responding."
+These were the two genuinely hard design problems in this assignment —
+decisions where the wrong choice would have quietly broken correctness.
+
+**Representing a "segment" so overlap is unambiguous.** A booking isn't for
+a seat — it's for a _leg_ of the seat's journey, and the whole feature
+depends on being able to say, precisely, whether two legs overlap. The
+obvious representation, an (origin station, destination station) pair,
+doesn't give you overlap for free: deciding whether two legs overlap means
+comparing where each station actually falls along the route, which means
+joining back to `Stations` and comparing positions every time — and it
+doesn't map onto anything a database can enforce as a constraint. Distance
+in kilometers was considered and rejected too: it's a decimal, and using it
+for overlap comparisons risks rounding/precision ambiguity exactly at the
+boundary points that matter most (is a leg ending at "121.00 km" adjacent
+to one starting at "120.999999 km", or overlapping?) — the right unit for
+fare is the wrong unit for correctness.
+
+The representation that made overlap a clean, exact predicate: each station
+gets a small integer `SequenceNumber` (its position along the route), and a
+leg is a **half-open range** `[originSeq, destinationSeq)` over those
+integers — see `Segment.cs`. Half-open specifically, not
+`[origin, destination]`, because the entire point of the assignment is that
+a leg ending at Kandy and a leg starting at Kandy must _not_ count as
+overlapping; half-open intervals are the standard tool for exactly this
+"touching but not overlapping" requirement (the same reason array slices
+and date ranges are conventionally half-open). Distance stays a separate
+field used only for fare, so the representation used for correctness and
+the representation used for pricing never have to agree with each other.
+
+**Inventing a concurrency-safe way to guarantee no two overlapping legs get
+booked.** The naive approach — query existing bookings for the seat, check
+for overlap in application code, then insert if clear — has a textbook race
+condition: two requests can both pass the "is it free" check before either
+one has actually inserted anything, and both proceed to book the same leg.
+The conventional application-level fixes (a pessimistic lock via
+`SELECT ... FOR UPDATE`, an optimistic version token, or `SERIALIZABLE`
+isolation with a retry loop) all work, but they put the correctness
+guarantee inside application code that has to be gotten right on every code
+path that ever touches a booking, forever.
+
+The approach used instead pushes the invariant into the schema itself:
+PostgreSQL's exclusion constraints let the database declare, as a schema
+rule, "no two rows may exist with the same seat and trip whose segment
+ranges overlap" — the same category of guarantee as a `UNIQUE` constraint,
+generalized from "no duplicate value" to "no overlapping range." This turns
+a concurrency problem into a constraint the database enforces atomically,
+correct regardless of how many requests race at once. The one wrinkle:
+exclusion constraints need an actual range-typed column to operate on, but
+the chosen representation above is two plain integers — solved by making
+the range a Postgres `GENERATED` column, computed by Postgres itself from
+those two integers, so there is structurally no way for the enforced range
+and the columns the application writes to ever disagree.
+
+Trusting that this actually works under real concurrency wasn't good
+enough on its own — it was tested directly against a running Postgres
+instance: firing genuinely simultaneous overlapping and adjacent inserts
+(inside a single script, after an earlier attempt using separate commands
+run moments apart turned out to have enough delay between them — over 13
+seconds in one case — that the "concurrent" requests weren't actually
+concurrent) and confirming, from real timestamps on both sides, that
+overlapping requests block and resolve based on whichever transaction
+actually committed first, while adjacent requests never contend at all.
 
 ## Verification
 
@@ -370,6 +389,7 @@ the single-seat concurrency behavior was verified with earlier.
 ## Local development without Docker
 
 Backend:
+
 ```bash
 cd backend/src/RailBooking.Api
 dotnet user-secrets set "ConnectionStrings:RailBookingDb" "Host=localhost;Port=5432;Database=railbooking;Username=postgres;Password=..."
@@ -377,6 +397,7 @@ dotnet run
 ```
 
 Frontend:
+
 ```bash
 cd frontend
 cp .env.example .env
