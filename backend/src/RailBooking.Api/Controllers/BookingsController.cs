@@ -36,6 +36,16 @@ public class BookingsController(RailBookingDbContext db, IOptions<FareRatesOptio
             return NotFound($"Trip departure {request.TripDepartureId} not found.");
         }
 
+        // The date picker already stops the UI from reaching a past date
+        // (see JourneySelector's minDate), but that's a UX guard, not a
+        // guarantee - the API independently rejects booking a trip that has
+        // already departed, same defense-in-depth pattern used everywhere
+        // else here (UI guides, API/DB enforce).
+        if (tripDeparture.ServiceDate < DateOnly.FromDateTime(DateTime.UtcNow))
+        {
+            return BadRequest("This trip departure has already passed and can no longer be booked.");
+        }
+
         var seatInfo = await (
             from seat in db.Seats
             join coach in db.Coaches on seat.CoachId equals coach.Id

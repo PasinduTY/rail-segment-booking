@@ -3,6 +3,7 @@ import type { Station } from "../api/types";
 interface JourneySelectorProps {
   stations: Station[];
   date: string;
+  minDate: string;
   onDateChange: (date: string) => void;
   originId: number | "";
   destinationId: number | "";
@@ -13,6 +14,7 @@ interface JourneySelectorProps {
 export function JourneySelector({
   stations,
   date,
+  minDate,
   onDateChange,
   originId,
   destinationId,
@@ -37,6 +39,7 @@ export function JourneySelector({
         <input
           type="date"
           value={date}
+          min={minDate}
           onChange={(e) => onDateChange(e.target.value)}
         />
       </label>

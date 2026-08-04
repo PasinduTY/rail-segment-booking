@@ -8,6 +8,11 @@ export function CoverBanner() {
         src="/cover.webp"
         alt="The Colombo Fort to Badulla scenic highlands railway line"
       />
+      <div className="cover-banner-scrim" aria-hidden="true" />
+      <div className="cover-banner-text">
+        <h1>Colombo Fort &ndash; Badulla</h1>
+        <p>Segment-based reserved seat booking</p>
+      </div>
     </div>
   );
 }

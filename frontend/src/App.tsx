@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 import { CoverBanner } from "./components/CoverBanner";
+import { EmptyState } from "./components/EmptyState";
 import { JourneySelector } from "./components/JourneySelector";
 import { SeatMap } from "./components/SeatMap";
 import { BookingPanel } from "./components/BookingPanel";
@@ -28,10 +29,15 @@ function describeError(err: unknown): string {
 }
 
 function App() {
+  // Not state - a booking can't be made for a date that's already passed,
+  // so this is the floor for the date picker (see JourneySelector's
+  // `minDate` prop) rather than something the user can move backward past.
+  const today = todayIso();
+
   const [stations, setStations] = useState<Station[]>([]);
   const [stationsError, setStationsError] = useState<string | null>(null);
 
-  const [date, setDate] = useState(todayIso());
+  const [date, setDate] = useState(today);
   const [originId, setOriginId] = useState<number | "">("");
   const [destinationId, setDestinationId] = useState<number | "">("");
 
@@ -165,11 +171,6 @@ function App() {
 
   return (
     <div className="app">
-      <header>
-        <h1>Colombo Fort &ndash; Badulla</h1>
-        <p className="muted">Segment-based reserved seat booking</p>
-      </header>
-
       <CoverBanner />
 
       {stationsError && <p className="error">{stationsError}</p>}
@@ -177,6 +178,7 @@ function App() {
       <JourneySelector
         stations={stations}
         date={date}
+        minDate={today}
         onDateChange={setDate}
         originId={originId}
         destinationId={destinationId}
@@ -203,26 +205,35 @@ function App() {
         </label>
       )}
 
-      {tripDepartures.length === 0 && !tripError && (
-        <p className="muted">No departures scheduled for this date.</p>
-      )}
-
       <div className="booking-layout">
         <section>
-          {availabilityLoading && <p className="muted">Checking availability...</p>}
-          {availabilityError && <p className="error">{availabilityError}</p>}
-          {availability && !availabilityLoading && (
-            <SeatMap
-              seats={availability.seats}
-              selectedSeatId={selectedSeatId}
-              onSelectSeat={setSelectedSeatId}
-            />
-          )}
-          {!availability && !availabilityLoading && originId !== "" && destinationId !== "" && (
-            <p className="muted">Select a departure to see seat availability.</p>
-          )}
-          {(originId === "" || destinationId === "") && (
-            <p className="muted">Choose an origin and destination to see seat availability.</p>
+          {tripDepartures.length === 0 && !tripError ? (
+            // No departures at all for this date - the only relevant empty
+            // state; showing the origin/destination or departure prompts
+            // alongside it would just be noise, since neither leads
+            // anywhere until a different date is picked.
+            <EmptyState icon="calendar" message="No departures scheduled for this date." />
+          ) : (
+            <>
+              {availabilityLoading && <p className="muted">Checking availability...</p>}
+              {availabilityError && <p className="error">{availabilityError}</p>}
+              {availability && !availabilityLoading && (
+                <SeatMap
+                  seats={availability.seats}
+                  selectedSeatId={selectedSeatId}
+                  onSelectSeat={setSelectedSeatId}
+                />
+              )}
+              {!availability && !availabilityLoading && originId !== "" && destinationId !== "" && (
+                <EmptyState icon="calendar" message="Select a departure to see seat availability." />
+              )}
+              {(originId === "" || destinationId === "") && (
+                <EmptyState
+                  icon="route"
+                  message="Choose an origin and destination to see seat availability."
+                />
+              )}
+            </>
           )}
         </section>
 
