@@ -1,3 +1,11 @@
+# Pinned explicitly rather than left to Compose's default (the directory's
+# basename) - two clones of this repo in different paths but the same
+# folder name would otherwise silently share the same project identity,
+# and therefore the same named volume below, even though they're
+# completely unrelated checkouts. See the README for what to do if you
+# genuinely want two independent instances running side by side.
+name: rail-segment-booking
+
 services:
   postgres:
     image: postgres:17-alpine

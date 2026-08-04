@@ -24,6 +24,17 @@ layout, and a rolling window of upcoming trip departures automatically.
 
 To stop: `docker compose down` (add `-v` to also wipe the database volume).
 
+> **Running a second, independent instance on the same machine?** This
+> project's Compose project name is pinned in `docker-compose.yml`, so every
+> checkout of this repo shares the same named Postgres volume regardless of
+> what folder you clone it into — convenient for restarting the same
+> instance, but it means two *different* checkouts (e.g. testing an old copy
+> alongside a fresh clone) will otherwise silently share one database and
+> can fail with a password mismatch if their `.env` files differ. If you
+> need two truly independent instances, either remove the old one's volume
+> first (`docker compose down -v` in that checkout) or give the new one its
+> own identity with `docker compose -p <unique-name> up --build`.
+
 ## Architecture
 
 ```
