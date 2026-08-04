@@ -239,7 +239,16 @@ the migration as literal C# at the moment `dotnet ef migrations add` runs, so
 a hardcoded "seed August 5th" would quietly go stale the day after. Instead,
 `DbSeeder` runs at application startup and seeds a rolling 14-day window of
 upcoming departures, so the demo works correctly no matter when the app is
-actually started.
+actually started (14 is an arbitrary, demo-sized horizon — every booking
+system needs *some* limit, since seeding "forever" isn't possible).
+
+This horizon is enforced on the frontend too: the date picker's `min`/`max`
+bounds (`BOOKING_HORIZON_DAYS` in `App.tsx`, cross-referenced against
+`DbSeeder.RollingWindowDays`) stop a date outside the window from being
+picked at all, with a caption explaining why. The "No departures scheduled"
+empty state still isn't redundant, though — `DbSeeder` only reseeds on
+restart, so a long-running server can still have in-range dates with
+nothing seeded yet.
 
 ## API surface
 
@@ -276,6 +285,11 @@ explicitly since it's a listed extra-credit item:
   booked it out from under that session via a background request, then
   submitted — confirmed the UI showed the correct message and refreshed
   state, not just that the API returned the right status code.
+- A dedicated `EmptyState` component (a dashed-border card with a small
+  hand-drawn icon — one for date-related gaps, one for route-related ones)
+  replaces plain muted text for every "nothing to show yet" message in the
+  booking flow, so a missing departure or an unselected origin/destination
+  reads as an intentional, designed state rather than a blank line of text.
 
 **Seat map visualization.** The initial seat picker was a flat row of
 numbered buttons — functionally correct, but it didn't read as an actual
